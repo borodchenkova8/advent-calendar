@@ -252,13 +252,19 @@ function render(){
   prog();paintPanel();if(window.snowResize)snowResize();
 }
 function prog(){S.opened=S.opened.filter(id=>idx(id)>-1);}
+function snowBurst(el){if(typeof confetti!=='function')return;
+  let x=.5,y=.5;if(el){const r=el.getBoundingClientRect();x=(r.left+r.width/2)/innerWidth;y=(r.top+r.height/2)/innerHeight}
+  const b={origin:{x,y},angle:90,spread:360,shapes:['circle'],zIndex:60,disableForReducedMotion:true};
+  confetti({...b,particleCount:80,startVelocity:20,gravity:.45,decay:.93,ticks:260,scalar:.6,colors:['#ffffff','#E6EEF8','#C9D7EA']});
+  confetti({...b,particleCount:16,startVelocity:13,gravity:.3,decay:.94,ticks:320,scalar:1.4,colors:['#ffffff','#DCE6F4']});
+}
 function openDay(id){
   const i=idx(id);if(i<0)return;
   if(locked(i)){toast('⏳ Это окошко откроется '+dd(i)+' декабря!');return}
   if(!S.opened.includes(id)){
     S.opened.push(id);save();
     const c=document.querySelector(`[data-d="${id}"] .inner`);if(c)c.classList.add('is-open');
-    if(typeof confetti==='function')confetti({particleCount:60,spread:60,origin:{y:.6},colors:['#F4E9DA','#CDAA7D','#8B4A52','#5A1D22','#ffffff']});
+    snowBurst(c);
     prog();
   }
   cur=id;const it=get(S.slots[i]);
