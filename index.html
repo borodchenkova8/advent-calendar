@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Адвент-календарь</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Адвент">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preload" href="door.jpg" as="image">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Jost','sans-serif'],serif:['Cormorant Garamond','serif'],hand:['Cormorant Garamond','serif']},colors:{
+gold:{300:'#E7D2B0',400:'#CDAA7D',500:'#B8956A',600:'#9A7A52'},
+slate:{100:'#F4E9DA',200:'#EADFCF',300:'#CDBFAE',400:'#A39384',500:'#7A6C62',600:'#54484A',700:'#3A2A2B',800:'#2A1A1B',900:'#1A0F10',950:'#0E0707'},
+amber:{100:'#F1DAD5',200:'#E8C9C4',300:'#D9A7A2',400:'#B96F76',500:'#8B4A52',900:'#3A1517',950:'#241011'},
+emerald:{300:'#A9B9A0',500:'#6F8A6A',950:'#1B2A22'},
+red:{200:'#E8B4B8',400:'#C4585F',800:'#5A1D22',900:'#3E1316',950:'#2B0E0E'}}}}}
+</script>
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--cream:#F4E9DA}
+html,body{background:#000}
+.font-hand{font-style:italic}
+.pill{font:300 .6rem/1 Jost,sans-serif;letter-spacing:.14em;padding:.32rem .8rem;border:1px solid rgba(244,233,218,.28);border-radius:999px;color:rgba(244,233,218,.65);background:transparent}
+.pill-on{border-color:rgba(244,233,218,.6);color:#F4E9DA;background:rgba(244,233,218,.1)}
+.ttl{display:inline-block;text-align:left;line-height:1;margin-top:.8rem}
+.t1{display:block;font:500 clamp(2.8rem,13vw,4.4rem)/1 'Cormorant Garamond',serif;color:var(--cream);letter-spacing:.01em}
+.t2{display:block;font:400 clamp(2.5rem,11.5vw,3.8rem)/1 'Mrs Saint Delafield',cursive;color:var(--cream);margin:-.28em 0 0 48%}
+.lead{font:300 clamp(.82rem,3.3vw,.98rem)/1.75 Jost,sans-serif;letter-spacing:.05em;color:#EDE3D6;margin-top:1.1rem}
+.prg{font:300 .68rem/1 Jost,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#A39384;margin-top:1rem;display:inline-block}
+.prg b{color:#D9B9B2;font-weight:400}
+.sw{position:relative}
+.stamp{--m:radial-gradient(circle at 50% 0,#0000 3.6px,#000 4px) 0 0/11px 100% repeat-x,radial-gradient(circle at 50% 100%,#0000 3.6px,#000 4px) 0 0/11px 100% repeat-x,radial-gradient(circle at 0 50%,#0000 3.6px,#000 4px) 0 0/100% 11px repeat-y,radial-gradient(circle at 100% 50%,#0000 3.6px,#000 4px) 0 0/100% 11px repeat-y;
+position:relative;aspect-ratio:1/1.06;background:var(--cream);cursor:pointer;transition:transform .25s;-webkit-mask:var(--m);-webkit-mask-composite:source-in;mask:var(--m);mask-composite:intersect}
+.stamp:hover{transform:translateY(-2px)}
+.sw:has(.inner:focus-visible){outline:2px solid #CDAA7D;outline-offset:3px}
+.face{position:absolute;inset:9px;background:#2A0E0E;display:flex;align-items:center;justify-content:center;transition:opacity .6s}
+.back{opacity:0;background:#471A1D}
+.is-open .front{opacity:0}.is-open .back{opacity:1}
+.frame{position:absolute;inset:6px;border:1px solid rgba(244,233,218,.85);pointer-events:none}
+.num{font:500 clamp(2rem,9.5vw,3.2rem)/1 'Cormorant Garamond',serif;color:#A0626A;font-variant-numeric:lining-nums;font-feature-settings:'lnum' 1}
+.cap{position:absolute;bottom:22px;font:400 7px/1 Jost,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,233,218,.55)}
+.bt{font:500 clamp(.78rem,3.4vw,1rem)/1.15 'Cormorant Garamond',serif;color:var(--cream);text-align:center;padding:0 14px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.eb{position:absolute;top:-8px;right:-8px;z-index:5;width:28px;height:28px;border-radius:50%;background:#CDAA7D;color:#1A0F10;font-size:14px}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #CDAA7D;outline-offset:2px}
+#door{position:fixed;inset:0;z-index:100;perspective:1800px;overflow:hidden}
+#leaf{position:absolute;inset:0;background:#2a0b0b url(door.jpg) right center/cover no-repeat;transform-origin:0 50%;box-shadow:inset -40px 0 80px rgba(0,0,0,.35)}
+#door.go #leaf{animation:swing 2.2s cubic-bezier(.6,0,.3,1) forwards}
+@keyframes swing{0%{transform:rotateY(0);opacity:1;filter:brightness(1)}60%{opacity:1}100%{transform:rotateY(-118deg);opacity:0;filter:brightness(.5)}}
+.dt{position:absolute;left:9%;top:44%;transform:translateY(-50%);text-shadow:0 2px 16px rgba(0,0,0,.55)}
+.dt .t1{font-size:clamp(2.3rem,11vw,3.6rem)}
+.dt .t2{font-size:clamp(2.1rem,9.5vw,3rem);margin-left:46%}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.burger{width:40px;height:40px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;}
+.burger i{display:block;width:14px;height:1px;background:rgba(244,233,218,.75)}
+.menu{position:absolute;right:0;top:42px;min-width:176px;padding:6px;border-radius:14px;background:rgba(18,9,9,.96);border:1px solid rgba(244,233,218,.18);display:flex;flex-direction:column}
+.menu.hidden{display:none}
+.menu button{font:300 .72rem/1 Jost,sans-serif;letter-spacing:.14em;text-align:left;padding:.75rem .8rem;color:rgba(244,233,218,.85);border-radius:10px}
+.menu button:hover{background:rgba(244,233,218,.08)}
+.menu button.on{color:#E7D2B0}
+.hint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 36px);text-align:center;font:300 .7rem/1 Jost,sans-serif;letter-spacing:.25em;text-transform:uppercase;color:rgba(244,233,218,.75);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+#door{cursor:pointer}#door.go .hint{display:none}
+</style>
+</head>
+<body class="relative bg-black text-slate-100 font-sans min-h-screen overflow-x-hidden antialiased">
+<canvas id="snowc" class="absolute left-0 top-0 z-20 pointer-events-none"></canvas>
+<div class="absolute z-30" style="right:16px;top:16px">
+  <button id="burger" onclick="toggleMenu(event)" aria-label="Меню" aria-expanded="false" class="burger"><i></i><i></i><i></i></button>
+  <div id="menu" class="menu hidden">
+    <button onclick="closeMenu();show('install')">приложение</button>
+    <button id="mbtn" onclick="closeMenu();toggleMusic()">мелодия · выкл</button>
+    <button id="pbtn" onclick="closeMenu();toggleParent()">родительский режим</button>
+  </div>
+</div>
+<div id="door" role="button" tabindex="0" aria-label="Открыть календарь"><div id="leaf"><div class="dt"><span class="t1">ADVENT</span><span class="t2">calendar</span></div><div class="hint">коснитесь, чтобы открыть</div></div></div>
+
+
+<div class="relative z-10 max-w-5xl mx-auto px-4 pt-14 pb-10">
+  <header class="text-center max-w-xl mx-auto mt-2 mb-10">
+  <svg id="star" class="mx-auto" width="30" height="30" viewBox="0 0 48 48" aria-hidden="true" style="filter:drop-shadow(0 0 5px rgba(220,230,244,.55))"><polygon points="24,3 29.9,17.7 45.7,18.5 33.4,28.5 37.5,43.8 24,35.2 10.5,43.8 14.6,28.5 2.3,18.5 18.1,17.7" fill="rgba(220,230,244,.08)" stroke="rgba(236,242,250,.75)" stroke-width=".8" stroke-linejoin="round"/></svg>
+  <h1 class="ttl" data-quiet><span class="t1">ADVENT</span><span class="t2">calendar</span></h1>
+  <p class="lead" data-quiet>Открывайте по одному окошку каждый день!<br>Внутри — тёплые домашние задания, сказочные идеи и праздничный уют.</p>
+  
+  <div id="panel" class="hidden mt-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 text-left">
+      <div class="flex justify-between items-center"><p class="font-semibold">Настройки родителя</p><button onclick="setParent(false)" aria-label="Закрыть настройки" class="px-3 py-1 rounded-full border border-amber-500/40 text-amber-200">✕ закрыть</button></div>
+      <div><p class="text-slate-300 mb-1.5">Сколько окошек в календаре:</p>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="setN(N()-1)" aria-label="Меньше" class="w-9 h-9 rounded-xl border border-white/15 bg-white/5 text-lg">−</button>
+          <span id="ncount" class="min-w-[2.5rem] text-center text-2xl font-serif text-gold-300">31</span>
+          <button onclick="setN(N()+1)" aria-label="Больше" class="w-9 h-9 rounded-xl border border-white/15 bg-white/5 text-lg">+</button>
+          <span class="mx-1 text-slate-500">быстро:</span>
+          <button onclick="setN(31)" class="px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/5">31</button>
+          <button onclick="setN(15)" class="px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/5">15</button>
+          <button onclick="setN(10)" class="px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/5">10</button>
+          <button onclick="setN(7)" class="px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/5">7</button>
+        </div>
+        <p class="text-slate-400 font-light mt-1.5">Меньше 31 — это обратный отсчёт до Нового года. Новые окошки добавляются в начало, лишние убираются с начала.</p>
+      </div>
+      <button id="lockbtn" onclick="toggleLock()" class="px-3 py-1.5 rounded-xl border"></button>
+      <p class="text-slate-400 font-light" id="lockhint"></p>
+      <div class="flex gap-2 flex-wrap items-center">
+        <button id="resetbtn" onclick="resetAll()" class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/15 text-slate-300">Сбросить открытые окошки</button>
+        <button id="resetTexts" onclick="resetTexts()" class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/15 text-slate-300">Начать заново (исходный набор)</button>
+      </div>
+      <p class="text-slate-400 font-light">Нажмите «✎» на окошке, чтобы изменить задание. Ваши правки хранятся только на этом устройстве.</p>
+      <button onclick="setParent(false)" class="w-full py-2 rounded-xl bg-gold-500 text-slate-950 font-semibold">Готово</button>
+    </div>
+  </header>
+
+  <main><div id="grid" class="grid grid-cols-3 gap-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-6 max-w-4xl mx-auto"></div></main>
+  <p class="text-center text-xs text-slate-500 mt-10">Создано для уютных зимних вечеров ✨</p>
+  <p class="text-center text-[10px] text-slate-500 mt-2 px-6 leading-relaxed">Музыка: «Jingle Bells Calm» — Kevin MacLeod (<a href="https://incompetech.com" class="underline" target="_blank" rel="noopener">incompetech.com</a>), лицензия <a href="https://creativecommons.org/licenses/by/4.0/" class="underline" target="_blank" rel="noopener">CC BY 4.0</a></p>
+</div>
+
+<!-- Card modal -->
+<div id="card" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80" onclick="if(event.target===this)hide('card')">
+  <div class="w-full max-w-lg bg-slate-900 rounded-3xl border border-white/20 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+    <div class="p-5 pr-14 bg-gradient-to-r from-red-900/60 via-amber-900/40 to-slate-900 relative">
+      <button onclick="hide('card')" aria-label="Закрыть" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/40 border border-white/20">✕</button>
+      <span id="cbadge" class="inline-block px-3 py-0.5 rounded-full bg-gold-500 text-slate-950 font-bold text-xs mb-2"></span>
+      <h3 id="ctitle" class="text-xl sm:text-2xl font-serif font-bold"></h3>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <p id="ctask" class="text-base text-slate-200 font-light leading-relaxed bg-white/5 p-4 rounded-2xl border border-white/10"></p></div>
+      <div id="cquoteWrap" class="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20">
+        <p class="text-xs font-semibold text-amber-300 mb-1">✨ Уютная мысль</p>
+        <p id="cquote" class="font-hand text-amber-100 text-2xl leading-snug"></p></div>
+      <div class="pt-3 flex items-center justify-between gap-2 border-t border-white/10">
+        <button id="prev" onclick="nav(-1)" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs disabled:opacity-30">← Назад</button>
+        <div class="flex gap-2">
+          <button id="cedit" onclick="editCurrent()" class="hidden px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs">✏️</button>
+          <button onclick="hide('card')" class="px-4 py-2 rounded-xl bg-gold-500 text-slate-950 font-semibold text-xs">Отлично!</button>
+        </div>
+        <button id="next" onclick="nav(1)" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs disabled:opacity-30">Вперёд →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85">
+  <div class="w-full max-w-lg bg-slate-900 rounded-3xl border border-amber-500/30 p-5 space-y-3 max-h-[92vh] overflow-y-auto">
+    <div class="flex justify-between"><h3 class="font-bold text-amber-300">✏️ Окошко <span id="eday"></span></h3><button onclick="hide('edit')" aria-label="Закрыть">✕</button></div>
+    <label class="block text-xs text-slate-300">Заголовок<input id="et" class="mt-1 w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-sm"></label>
+    <label class="block text-xs text-slate-300">Задание<textarea id="ek" rows="3" class="mt-1 w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-sm"></textarea></label>
+    <label class="block text-xs text-slate-300">Мысль (можно оставить пустой)<input id="eq" class="mt-1 w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-sm text-amber-200"></label>
+    <div class="flex gap-2 flex-wrap text-xs"><button onclick="insertBefore()" class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/15">＋ Окошко перед этим</button><button id="delbtn" onclick="delSlot()" class="px-3 py-1.5 rounded-xl bg-red-900/40 border border-red-400/30 text-red-200">🗑 Удалить окошко</button></div>
+    <div class="flex justify-between items-center pt-2 border-t border-white/10">
+      <button onclick="restoreOne()" class="text-xs text-slate-400 underline">Исходный текст</button>
+      <div class="flex gap-2"><button onclick="hide('edit')" class="px-4 py-2 rounded-xl bg-white/5 text-xs">Отмена</button>
+      <button onclick="saveEdit()" class="px-5 py-2 rounded-xl bg-gold-500 text-slate-950 font-bold text-xs">Сохранить</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Parent gate -->
+<div id="gate" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85">
+  <div class="w-full max-w-xs bg-slate-900 rounded-3xl border border-white/20 p-5 space-y-3 text-center">
+    <p class="text-sm text-slate-300">Только для взрослых. Сколько будет <b id="gq" class="text-gold-300"></b>?</p>
+    <input id="ga" inputmode="numeric" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-center text-lg" onkeydown="if(event.key==='Enter')checkGate()">
+    <div class="flex gap-2 justify-center"><button onclick="hide('gate')" class="px-4 py-2 rounded-xl bg-white/5 text-xs">Отмена</button><button onclick="checkGate()" class="px-5 py-2 rounded-xl bg-gold-500 text-slate-950 font-bold text-xs">Войти</button></div>
+  </div>
+</div>
+
+<!-- Install -->
+<div id="install" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80" onclick="if(event.target===this)hide('install')">
+  <div class="w-full max-w-md bg-slate-900 rounded-3xl border border-white/20 p-5 space-y-3 text-sm text-slate-300">
+    <h3 class="font-bold text-gold-300">📱 Как добавить на экран телефона</h3>
+    <p class="p-3 bg-white/5 rounded-2xl"><b class="text-white">iPhone (Safari):</b> нажмите «Поделиться» → «На экран „Домой“».</p>
+    <p class="p-3 bg-white/5 rounded-2xl"><b class="text-white">Android (Chrome):</b> три точки → «Добавить на главный экран» или «Установить приложение».</p>
+    <button onclick="hide('install')" class="w-full py-2.5 rounded-xl bg-white/10 text-xs">Понятно</button>
+  </div>
+</div>
+
+<script>
+const D=[["Письмо Деду Морозу","Напишите или нарисуйте вместе письмо Деду Морозу и положите его в морозилку или на подоконник.","Волшебство начинается с веры в чудо!"],
+["Зимнее печенье","Испеките вместе имбирное или песочное печенье с корицей и украсьте его глазурью.","Дом становится теплее, когда пахнет выпечкой."],
+["Снежинки на окна","Вырежьте бумажные снежинки и украсьте ими окна в детской комнате.","Каждая снежинка уникальна, как и каждый из нас."],
+["Вечер зимней сказки","Заварите чай с ягодами, укройтесь пледом и почитайте зимнюю сказку при свете гирлянды.","Книги переносят нас в самые сказочные миры."],
+["Кормушка для птичек","Сделайте простую кормушку для птиц и повесьте её на дереве во дворе.","Забота о маленьких соседях делает сердце большим."],
+["Семейный мультфильм","Устройте вечерний киносеанс с какао и маршмеллоу. Посмотрите «Снеговика» или «Гринча».","Смех семьи — лучшая музыка зимы."],
+["Поиск мандаринок","Спрячьте мандаринку в комнате и нарисуйте простую карту сокровищ для ребёнка.","Маленькие приключения создают большие воспоминания."],
+["Праздничный плейлист","Составьте семейный новогодний плейлист и потанцуйте под любимые песни.","Музыка создаёт праздничное настроение за секунду!"],
+["Снежный городок","Слепите снеговика на улице или постройте замок из ваты прямо на ковре.","Творчество не знает границ и возраста."],
+["Ёлочные игрушки своими руками","Сделайте игрушки из солёного теста или шишек и раскрасьте их яркими красками.","Самые ценные украшения — сделанные с любовью."],
+["Затишье и свечи","Посидите 5 минут в тишине при свете гирлянд, загадывая желания и обнимаясь.","Тишина и свет создают настоящую магию."],
+["Пряничный домик","Соберите и украсьте готовый или самодельный пряничный домик.","Маленькие детали создают шедевры."],
+["Зимняя прогулка","Отправляйтесь на вечернюю прогулку смотреть на праздничные огни города.","Мир прекрасен, когда он сияет огнями."],
+["Карта желаний","Нарисуйте или вырежьте из журналов то, о чём мечтает ваша семья в новом году.","Мечты имеют свойство сбываться!"],
+["Фотосессия у ёлочки","Нарядитесь в смешные свитера или пижамы и сделайте семейное фото на память.","Запечатлейте мгновение счастья."],
+["Пряный горячий шоколад","Приготовьте густой горячий шоколад со сливками и щепоткой корицы.","Сладость согревает даже в самый морозный день."],
+["Тайный друг","Сделайте друг другу маленькие приятные сюрпризы-записки.","Дарить радость приятно вдвойне."],
+["Ароматная гирлянда","Сделайте гирлянду из сушёных долек апельсина, палочек корицы и бечёвки.","Аромат уюта наполнит весь дом."],
+["Вечер воспоминаний","Посмотрите семейный фотоальбом за прошлый год и вспомните самые радостные моменты.","Благодарность за прошлое открывает двери будущему."],
+["Упаковка подарков","Заверните подарки для близких в крафтовую бумагу и украсьте веточками ели.","Красота в простоте и искренности."],
+["День зимнего солнцестояния","Зажгите свечи и загадайте самое сокровенное семейное желание.","С этого дня свет начинает побеждать тьму."],
+["Театр теней","Выключите свет, включите фонарик и устройте сказку теней на стене.","Фантазия оживляет любые истории."],
+["Новогодние открытки","Подпишите и отправьте настоящие бумажные открытки бабушкам и дедушкам.","Тепло ваших слов согреет близких сквозь расстояния."],
+["Украшение ёлки","Нарядите главную ёлку всей семьёй под новогоднюю музыку.","Зелёная красавица принесла праздник в дом!"],
+["Семейный мастер-класс","Сложите оригами-звёздочки или сделайте бумажные фонарики.","Умелые ручки создают сказку."],
+["Снежный пикник","Возьмите термос с горячим чаем на прогулку в парк или во двор.","Горячий чай на морозе — особенное удовольствие."],
+["Праздничный наряд","Придумайте маскарадный элемент или наряд на новогоднюю ночь.","Праздник — это время для веселья и фантазии!"],
+["Уборка-игра","Превратите уборку в игру: отдайте ненужное, освободив место новому.","Освобождаем пространство для новых чудес."],
+["Интервью года","Запишите на видео ответы ребёнка: «Что тебе больше всего запомнилось в этом году?»","Сохраняйте моменты неповторимого детства."],
+["Репетиция праздника","Приготовьте пробное новогоднее блюдо или красивый десерт.","Предвкушение праздника иногда лучше самого праздника."],
+["С Новым Годом!","Слушайте бой курантов, зажигайте бенгальские огни и обнимайте любимых!","Пусть новый год принесёт море счастья, здоровья и любви!"]];
+
+const KEY='advent_v4';
+let S={slots:null,opened:[],lock:false};
+try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.slots)S=r}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let uid=Date.now(),parent=false,cur=null,editing=null,gateOk=null;
+const nid=()=>'s'+(uid++);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function build(n){S.slots=[];for(let b=32-n;b<=31;b++)S.slots.push({id:nid(),base:b})}
+if(!S.slots)build(31);
+const N=()=>S.slots.length,idx=id=>S.slots.findIndex(s=>s.id===id),isCount=()=>N()<31;
+const get=s=>{const b=s.base?D[s.base-1]:['','',''];return{t:s.t??b[0],k:s.k??b[1],q:s.q??b[2]}};
+const dd=i=>31-(N()-1-i);
+const locked=i=>{if(!S.lock||parent)return false;const n=new Date();return n.getMonth()!==11||dd(i)>n.getDate()};
+const badge=i=>isCount()?(i===N()-1?'Новый год сегодня!':(N()-1-i)+' дн. до Нового года'):'День '+dd(i)+' из 31';
+function show(id){const e=$(id);e.classList.remove('hidden');e.classList.add('flex')}
+function hide(id){const e=$(id);e.classList.add('hidden');e.classList.remove('flex')}
+function toast(m){const t=document.createElement('div');t.className='fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 bg-slate-900 text-amber-300 border border-amber-500/30 text-xs rounded-2xl shadow-xl';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500)}
+
+function render(){
+  const g=$('grid');g.innerHTML='';const n=N();
+  S.slots.forEach((s,i)=>{
+    const op=S.opened.includes(s.id),lk=locked(i),it=get(s),left=n-1-i,last=i===n-1;
+    const big=isCount()?(last?'✦':left):dd(i);
+    const cap=(isCount()&&!last?'дн. до нг':'');
+    const c=document.createElement('div');c.className='sw';c.dataset.d=s.id;
+    c.innerHTML=`<div class="inner stamp${op?' is-open':''}" role="button" tabindex="0" aria-label="${isCount()?left+' дн. до Нового года':'День '+dd(i)}">
+      <div class="face front"><i class="frame"></i><span class="num">${big}</span>${cap?`<span class="cap">${cap}</span>`:''}</div>
+      <div class="face back"><i class="frame"></i><p class="bt">${esc(it.t)}</p></div></div>
+      ${parent?'<button class="eb" aria-label="Изменить">✎</button>':''}`;
+    const inner=c.querySelector('.inner');
+    inner.onclick=()=>openDay(s.id);
+    inner.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDay(s.id)}};
+    const eb=c.querySelector('.eb');if(eb)eb.onclick=e=>{e.stopPropagation();openEdit(s.id)};
+    g.appendChild(c);
+  });
+  prog();paintPanel();if(window.snowResize)snowResize();
+}
+function prog(){S.opened=S.opened.filter(id=>idx(id)>-1);}
+function openDay(id){
+  const i=idx(id);if(i<0)return;
+  if(locked(i)){toast('⏳ Это окошко откроется '+dd(i)+' декабря!');return}
+  if(!S.opened.includes(id)){
+    S.opened.push(id);save();
+    const c=document.querySelector(`[data-d="${id}"] .inner`);if(c)c.classList.add('is-open');
+    if(typeof confetti==='function')confetti({particleCount:60,spread:60,origin:{y:.6},colors:['#F4E9DA','#CDAA7D','#8B4A52','#5A1D22','#ffffff']});
+    prog();
+  }
+  cur=id;const it=get(S.slots[i]);
+  $('cbadge').textContent=badge(i);$('ctitle').textContent=it.t;$('ctask').textContent=it.k;
+  const q=(it.q||'').trim();$('cquoteWrap').classList.toggle('hidden',!q);$('cquote').textContent=q?'«'+q+'»':'';
+  $('prev').disabled=i===0;$('next').disabled=i===N()-1;
+  $('cedit').classList.toggle('hidden',!parent);
+  show('card');
+}
+function nav(n){const j=idx(cur)+n;if(j>=0&&j<N())openDay(S.slots[j].id)}
+
+function openEdit(id){editing=id;const s=S.slots[idx(id)],it=get(s);$('eday').textContent=idx(id)+1;$('et').value=it.t;$('ek').value=it.k;$('eq').value=it.q||'';show('edit')}
+function editCurrent(){const d=cur;hide('card');openEdit(d)}
+function saveEdit(){
+  const t=$('et').value.trim(),k=$('ek').value.trim(),q=$('eq').value.trim();
+  if(!t||!k){toast('Заполните заголовок и задание');return}
+  Object.assign(S.slots[idx(editing)],{t,k,q});save();hide('edit');render();
+}
+function restoreOne(){const s=S.slots[idx(editing)];const b=s.base?D[s.base-1]:['Новое задание','',''];$('et').value=b[0];$('ek').value=b[1];$('eq').value=b[2]}
+function insertBefore(){
+  if(N()>=31){toast('Максимум 31 окошко');return}
+  const i=idx(editing),s={id:nid(),base:null,t:'Новое задание',k:'Впишите здесь задание',q:''};
+  S.slots.splice(i,0,s);save();hide('edit');render();openEdit(s.id);
+}
+function delSlot(){
+  arm('delbtn',()=>{
+    if(N()<=1){toast('Должно остаться хотя бы одно окошко');return}
+    S.slots.splice(idx(editing),1);save();hide('edit');render();
+  });
+}
+
+function paintPanel(){
+  $('ncount').textContent=N();
+  $('lockbtn').textContent=S.lock?'🔒 Окошки открываются по датам декабря':'🔓 Все окошки открыты (без ограничений)';
+  $('lockbtn').className='px-3 py-1.5 rounded-xl border '+(S.lock?'bg-amber-500/20 text-amber-300 border-amber-500/30':'bg-emerald-500/20 text-emerald-300 border-emerald-500/30');
+  $('lockhint').textContent=(S.lock?'Ребёнок видит только окошки до сегодняшнего числа. ':'Включите защиту по датам, когда начнётся отсчёт. ')+'Последнее окошко всегда открывается 31 декабря.';
+}
+function setN(n){
+  n=Math.max(1,Math.min(31,n));const c=N();if(n===c)return;
+  if(n<c)S.slots=S.slots.slice(c-n);
+  else for(let j=c;j<n;j++)S.slots.unshift({id:nid(),base:31-j});
+  save();render();
+}
+function toggleLock(){S.lock=!S.lock;save();render()}
+let armed={};
+function arm(id,fn){const b=$(id);if(armed[id]){clearTimeout(armed[id]);armed[id]=0;b.textContent=b.dataset.o;fn();return}
+  b.dataset.o=b.textContent;b.textContent='Точно? Нажмите ещё раз';armed[id]=setTimeout(()=>{armed[id]=0;b.textContent=b.dataset.o},3000)}
+function resetAll(){arm('resetbtn',()=>{S.opened=[];save();render()})}
+function resetTexts(){arm('resetTexts',()=>{const n=N();S.opened=[];build(n);save();render()})}
+
+function toggleParent(){
+  if(parent){setParent(false);return}
+  const a=3+Math.floor(Math.random()*7),b=3+Math.floor(Math.random()*7);
+  gateOk=a*b;$('gq').textContent=a+' × '+b;$('ga').value='';show('gate');setTimeout(()=>$('ga').focus(),50);
+}
+function checkGate(){if(parseInt($('ga').value,10)===gateOk){hide('gate');setParent(true)}else{toast('Неверно, попробуйте ещё раз');$('ga').value=''}}
+function setParent(v){
+  parent=v;cv.style.display=v?'none':'';$('panel').classList.toggle('hidden',!v);
+  $('pbtn').textContent=v?'родительский режим · вкл':'родительский режим';
+  $('pbtn').className=v?'on':'';
+  render();if(v)setTimeout(()=>$('panel').scrollIntoView({behavior:'smooth',block:'center'}),80);
+}
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const cv=$('snowc'),cx=cv.getContext('2d'),DPR=Math.min(2,devicePixelRatio||1);
+let W=0,Hh=0,P=[],R=[],T={},rq=0,last=0;
+const tw=t=>{const k=t*5;return Math.min(1,t*7)*(Math.floor(k)+(k%1)*.75+.25)/5};
+function spawn(p,init){p.u=(Math.random()<.5?-1:1)*Math.pow(Math.random(),.7);p.k=3+Math.random()*2;p.B=Math.max(T.h,Hh-T.top-20)*(.3+.7*Math.random());p.max=p.B/(35+Math.random()*25);p.jx=(Math.random()-.5)*10;p.r=.5+Math.random()*1.4;p.life=init?Math.random()*p.max:0;p.ph=Math.random()*6.28}
+function quiet(){R=[...document.querySelectorAll('[data-quiet]')].map(e=>{const r=e.getBoundingClientRect();return{l:r.left-12,t:r.top+scrollY-10,r:r.right+12,b:r.bottom+scrollY+10}});const s=$('star').getBoundingClientRect();T={cx:W/2,top:s.top+s.height/2+scrollY,h:Math.min(820,W*2.1),mw:W*.5}}
+function draw(now,dt){cx.clearRect(0,0,W,Hh);for(const p of P){p.life+=dt;if(p.life>p.max)spawn(p);const s=Math.min(1,p.life/p.max),y=T.top+p.B*s,q=Math.min(1,(y-T.top)/T.h),e=1-Math.pow(1-q,p.k),x=T.cx+p.u*T.mw*e+p.jx*s+Math.sin(now/1600+p.ph)*4*Math.min(1,q*3);let a=Math.min(1,p.life/.5)*Math.min(1,(1-s)*4)*(.35+.65*Math.abs(Math.sin(now/500+p.ph)));for(const r of R)if(x>r.l&&x<r.r&&y>r.t&&y<r.b){a*=.2;break}cx.globalAlpha=a;cx.fillStyle='#DCE6F4';cx.beginPath();cx.arc(x,y,p.r,0,6.283);cx.fill()}}
+function snowResize(){cancelAnimationFrame(rq);rq=requestAnimationFrame(()=>{cv.style.height='0px';W=document.documentElement.clientWidth;Hh=document.documentElement.scrollHeight;cv.width=W*DPR;cv.height=Hh*DPR;cv.style.width=W+'px';cv.style.height=Hh+'px';cx.setTransform(DPR,0,0,DPR,0,0);quiet();P=Array.from({length:Math.round(Math.min(760,W*2))},()=>{const p={};spawn(p,1);return p});if(RM)draw(performance.now(),0)})}
+function loop(now){if(!parent)draw(now,Math.min(.05,(now-last)/1000||0));last=now;requestAnimationFrame(loop)}
+if(!RM)requestAnimationFrame(loop);
+addEventListener('resize',snowResize);if(document.fonts)document.fonts.ready.then(snowResize);
+(function(){const d=$('door');if(RM){d.remove();return}
+let o=0;const open=()=>{if(o)return;o=1;d.classList.add('go');if(S.music!==false)startMusic()};
+$('leaf').addEventListener('animationend',()=>d.remove());d.onclick=open;d.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}})();
+
+/* --- music: "Jingle Bells Calm" by Kevin MacLeod (incompetech.com), CC BY 4.0 --- */
+const MUSIC_SRC='jingle-bells-calm.mp3';
+let AU=null,mon=false;
+try{AU=new Audio(MUSIC_SRC);AU.loop=true;AU.volume=.55;AU.preload='auto'}catch(e){}
+function startMusic(){try{if(!AU){AU=new Audio(MUSIC_SRC);AU.loop=true;AU.volume=.55;AU.preload='auto'}mon=true;paintMusic();AU.play().catch(()=>{mon=false;paintMusic();toast('Звук не включился. Проверьте громкость телефона или откройте ссылку в Safari')})}catch(e){mon=false;toast('Не удалось включить звук в этом браузере')}}
+function stopMusic(){mon=false;if(AU)AU.pause();paintMusic()}
+function toggleMusic(){if(mon)stopMusic();else startMusic();S.music=mon;save()}
+function paintMusic(){const b=$('mbtn');b.textContent='мелодия · '+(mon?'вкл':'выкл');b.className=mon?'on':''}
+document.addEventListener('visibilitychange',()=>{if(!AU||!mon)return;document.hidden?AU.pause():AU.play().catch(()=>{})});
+function closeMenu(){$('menu').classList.add('hidden');$('burger').setAttribute('aria-expanded','false')}
+function toggleMenu(e){e.stopPropagation();const m=$('menu');m.classList.toggle('hidden');$('burger').setAttribute('aria-expanded',String(!m.classList.contains('hidden')))}
+document.addEventListener('click',e=>{if(!e.target.closest('#menu,#burger'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
+render();
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
